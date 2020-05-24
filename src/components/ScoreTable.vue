@@ -73,7 +73,7 @@
                          min-width="150"
                          width="150">
         </el-table-column>
-        <el-table-column prop="confrimedScore"
+        <el-table-column prop="minusScore"
                          label="总扣分"
                          align="center"
                          width="60">
@@ -158,12 +158,42 @@
                    @click="confirmCreate">确 定</el-button>
       </div>
     </el-dialog>
-    <el-button style="margin-top:20px"
+    <el-button style="margin-top:20px;margin-bottom:20px;"
                @click="auth=1-auth"
                type="primary">{{this.auth?'发布评价表':'管理员模式'}}</el-button>
-    <div id="main"
-         v-show="auth===0"
-         style="margin-top:20px;width: 900px;height:400px;"></div>
+    <div v-if="1-auth">
+      <el-select v-model=" select_index1"
+                 clearable
+                 placeholder="选择板块">
+        <el-option v-for="item in first_chart"
+                   :key="item.index"
+                   :label="item.name"
+                   :value="item.index">
+        </el-option>
+      </el-select>
+      <el-select v-model=" select_index2"
+                 clearable
+                 placeholder="选择评分指标"
+                 :disabled="select_index1===''">
+        <el-option v-for="item in second_chart[select_index1]"
+                   :key="item.index"
+                   :label="item.name"
+                   :value="item.index">
+        </el-option>
+      </el-select>
+      <div id="first"
+           :hidden="select_index1!==''"
+           style="margin-top:20px;margin:20px auto;width: 900px;height:400px;">
+      </div>
+      <div id="second"
+           :hidden="select_index1===''||select_index2!==''"
+           style="margin-top:20px;margin:20px auto;width: 900px;height:400px;">
+      </div>
+      <div id="third"
+           :hidden="select_index1===''||select_index2===''"
+           style="margin-top:20px;margin:20px auto;width: 900px;height:400px;">
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -181,7 +211,10 @@ export default {
       auth: 1,
       editing: false,
       selected: 0,
+      activeName: 'first',
       dialogFormVisible: false,
+      select_index1: '',
+      select_index2: '',
       form: {
         num: 0,
         note: '',
@@ -189,7 +222,9 @@ export default {
       },
       formLabelWidth: '120px',
       name: '',
-      tableData: []
+      tableData: [],
+      first_chart: [],
+      second_chart: []
     }
   },
   async mounted () {
@@ -198,25 +233,36 @@ export default {
     this.tableData = response.tableData
     for (let table of this.tableData) {
       if (table.serial === 'title') {
-        table.explanation = table.explanation.concat(`（${table.score}分）`)
+        table.explanation = table.item.concat(`（${table.score}分）`)
       } else {
         for (let index in table.standards) {
           table.standards[index].index = parseInt(index, 10)
         }
-        console.log(table.standards)
       }
     }
   },
   watch: {
-    auth: function () { this.drawChart() },
+    auth: async function () {
+      this.select_index2 = this.select_index1 = ''
+      await this.calChart()
+      this.drawChart1()
+    },
+    select_index1 () {
+      this.select_index2 = ''
+      this.drawChart2()
+    },
+    select_index2 () {
+      console.log(this.second_chart[this.select_index1].issues)
+      this.drawChart3()
+    },
     form: function () { console.log(this.form) }
   },
   methods: {
-    drawChart () {
+    drawChart1 () { // 绘制echarts
       // 基于准备好的dom，初始化echarts实例
-      let myChart = this.$echarts.init(document.getElementById('main'))
+      let myChart1 = this.$echarts.init(document.getElementById('first'))
       // 指定图表的配置项和数据
-      let option = {
+      let option1 = {
         title: {
           text: this.name
         },
@@ -225,33 +271,103 @@ export default {
           data: ['扣分', '总分']
         },
         xAxis: {
-          data: this.tableData.filter((data) => {
-            return (data.serial !== 'title')
-          }).map((data) => { return data.item })
+          data: this.first_chart.map((data) => {
+            return data.name
+          })
         },
         yAxis: {},
         series: [
           {
             name: '扣分',
             type: 'bar',
-            data: this.tableData.filter((data) => {
-              return (data.serial !== 'title')
-            }).map((data) => { return data.confrimedScore })
+            data: this.first_chart.map((data) => {
+              return data.minusScore
+            })
           },
           {
             name: '总分',
             type: 'bar',
-            data: this.tableData.filter((data) => {
-              return (data.serial !== 'title')
-            }).map((data) => { return data.standardScore })
+            data: this.first_chart.map((data) => {
+              return data.standardScore
+            })
           }
 
         ]
       }
       // 使用刚指定的配置项和数据显示图表。
-      myChart.setOption(option)
+      myChart1.setOption(option1)
     },
-    arraySpanMethod ({ row, column, rowIndex, columnIndex }) {
+    drawChart2 () { // 绘制echarts
+      // 基于准备好的dom，初始化echarts实例
+      let myChart2 = this.$echarts.init(document.getElementById('second'))
+      // 指定图表的配置项和数据
+      let option2 = {
+        title: {
+          text: this.name
+        },
+        tooltip: {},
+        legend: {
+          data: ['扣分', '总分']
+        },
+        xAxis: {
+          data: this.second_chart[this.select_index1].map((data) => {
+            return data.name
+          })
+        },
+        yAxis: {},
+        series: [
+          {
+            name: '扣分',
+            type: 'bar',
+            data: this.second_chart[this.select_index1].map((data) => {
+              return data.minusScore
+            })
+          },
+          {
+            name: '总分',
+            type: 'bar',
+            data: this.second_chart[this.select_index1].map((data) => {
+              return data.standardScore
+            })
+          }
+
+        ]
+      }
+      // 使用刚指定的配置项和数据显示图表。
+      myChart2.setOption(option2)
+    },
+    drawChart3 () { // 绘制echarts
+      // 基于准备好的dom，初始化echarts实例
+      let myChart3 = this.$echarts.init(document.getElementById('third'))
+      // 指定图表的配置项和数据
+      let option3 = {
+        title: {
+          text: this.name
+        },
+        tooltip: {},
+        legend: {
+          data: ['扣分']
+        },
+        xAxis: {
+          data: this.second_chart[this.select_index1][this.select_index2].issues.map((data) => {
+            return data.reason
+          })
+        },
+        yAxis: {},
+        series: [
+          {
+            name: '扣分',
+            type: 'bar',
+            data: this.second_chart[this.select_index1][this.select_index2].issues.map((data) => {
+              return data.minusScore
+            })
+          }
+        ]
+      }
+      // 使用刚指定的配置项和数据显示图表。
+      myChart3.setOption(option3)
+    },
+    arraySpanMethod ({ row, column, rowIndex, columnIndex }) { // 行列合并函数
       if (row.serial === 'title') {
         if (columnIndex === this.auth + 3) {
           return [1, 8]
@@ -273,7 +389,7 @@ export default {
         }
       }
     },
-    tableRowClassName ({ row, rowIndex }) {
+    tableRowClassName ({ row, rowIndex }) { // 板块列的高亮
       if (row.serial === 'title') {
         return 'success-row'
       }
@@ -286,6 +402,41 @@ export default {
         note: '',
         region: ''
       }
+    },
+    calChart () {
+      this.first_chart = []
+      this.second_chart = []
+      let temp = { minusScore: 0, standardScore: 0 }
+      let arr = []
+      let name = this.tableData[0].item
+      let indexTitle = 0
+      let indexItem = 0
+      for (let i = 1; i <= this.tableData.length; i++) {
+        if (i === this.tableData.length || this.tableData[i].serial === 'title') {
+          this.first_chart.push(Object.assign({}, temp, { name, index: indexTitle }))
+          if (i !== this.tableData.length) {
+            name = this.tableData[i].item
+          }
+          this.second_chart.push(arr)
+          indexTitle++
+          indexItem = 0
+          arr = []
+          temp = { minusScore: 0, standardScore: 0 }
+        } else {
+          arr.push({
+            standardScore: this.tableData[i].standardScore,
+            minusScore: this.tableData[i].minusScore,
+            name: this.tableData[i].item,
+            index: indexItem++,
+            issues: this.tableData[i].issues
+          })
+          temp.minusScore += this.tableData[i].minusScore
+          temp.standardScore += this.tableData[i].standardScore
+        }
+      }
+    },
+    handleSwitchTab (tab, event) {
+      console.log(tab, event)
     },
     handleCreate (index) {
       // 点击新建扣分
@@ -305,7 +456,7 @@ export default {
       // 删除扣分项
       let parent = this.tableData[row.father]
       parent.issues.splice(index, 1)
-      parent.confrimedScore = this.computedScore(row.father)
+      parent.minusScore = this.computedScore(row.father)
     },
     computedScore (index) {
       // 计算当前评分指标的得分
@@ -323,7 +474,7 @@ export default {
       if (this.editing) {
         let reason = parent.standards.filter((data) => { if (data.index === this.form.region) return data })[0].reason
         parent.issues.filter((data) => { if (data.reason === reason) return data })[0].minusScore = this.form.num
-        parent.confrimedScore = this.computedScore(this.selected)
+        parent.minusScore = this.computedScore(this.selected)
         this.editing = false
       } else {
         let issue = {}
@@ -338,8 +489,8 @@ export default {
         }
         parent.issues.push(issue)
         console.log(parent.issues)
-        parent.confrimedScore += issue.minusScore
-        // parent.confrimedScore < 0 && (parent.confrimedScore = 0)
+        parent.minusScore += issue.minusScore
+        // parent.minusScore < 0 && (parent.minusScore = 0)
       }
       this.dialogFormVisible = false
     }

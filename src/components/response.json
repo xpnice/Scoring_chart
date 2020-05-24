@@ -5,14 +5,14 @@
         {
             "serial": "title",
             "score": 15,
-            "explanation": "一、监理项目部标准化建设"
+            "item": "一、监理项目部标准化建设"
         },
         {
             "serial": 1,
             "item": "项目部组建",
             "explanation": "项目部组建应符合公司规定的原则及标准，管理人员需持证上岗，总监（及总监代表）、安全监理、专业监理必须专职专岗，不得兼职，任职条件不得低于公司项目关键人员任职要求，主要管理人员与投标承诺一致",
             "standardScore": 6,
-            "confrimedScore": 0,
+            "minusScore": 0,
             "standards": [
                 {
                     "score": 6,
@@ -38,7 +38,7 @@
             "item": "项目部资源配置",
             "explanation": "监理项目部及监理站点设置合理，配备满足独立开展监理工作所需的办公、交通、通信、检测、个人安全防护用品等设备或工具，并配置必要的法律法规、规程规范和规章制度、技术标准等",
             "standardScore": 5,
-            "confrimedScore": 0,
+            "minusScore": 0,
             "standards": [
                 {
                     "score": 2,
@@ -56,7 +56,7 @@
             "item": "项目管理提升",
             "explanation": "对上级检查或业主项目部提出的监理问题进行闭环整改，制订提升措施并有效落实。对施工单位存在问题进行跟踪并督促闭环整改 ",
             "standardScore": 4,
-            "confrimedScore": 0,
+            "minusScore": 0,
             "standards": [
                 {
                     "score": 2,
@@ -72,14 +72,14 @@
         {
             "serial": "title",
             "score": 85,
-            "explanation": "二、监理项目部标准化建设"
+            "item": "二、重点工作开展情况"
         },
         {
             "serial": 1,
             "item": "策划管理（1）",
             "explanation": "监理规划编制符合公司有关要求，科学合理、有针对性、符合工程实际，编审批及报审手续完备。策划文件与实际实施一致，必要时及时修编（6分）",
             "standardScore": 6,
-            "confrimedScore": 0,
+            "minusScore": 0,
             "standards": [
                 {
                     "score": 2,
@@ -97,7 +97,7 @@
             "item": "策划管理（2）",
             "explanation": "对项目管理实施规划报审资料进行审查，审查意见明确、准确，有针对性，符合实际，并及时反馈施工项目部（4分） ",
             "standardScore": 4,
-            "confrimedScore": 0,
+            "minusScore": 0,
             "standards": [
                 {
                     "score": 2,
