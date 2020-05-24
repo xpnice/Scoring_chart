@@ -197,6 +197,11 @@
   </div>
 </template>
 <script>
+/**
+ * @Description: 综评系统的打分部分
+ * @author YANPENGLEE
+ * @date 2020/5/10
+ */
 import res from './response.json'
 const fetchtable = function (body, timeout = 1000) {
   return new Promise((resolve, reject) => {
@@ -211,7 +216,6 @@ export default {
       auth: 1,
       editing: false,
       selected: 0,
-      activeName: 'first',
       dialogFormVisible: false,
       select_index1: '',
       select_index2: '',
@@ -242,23 +246,31 @@ export default {
     }
   },
   watch: {
-    auth: async function () {
-      this.select_index2 = this.select_index1 = ''
-      await this.calChart()
-      this.drawChart1()
+    auth: async function () { // 切换管理员模式
+      this.select_index2 = this.select_index1 = '' // 清空选择器
+      if (this.auth === 0) {
+        await this.calChart() // 计算表格
+        this.drawChart1() // 绘制按板块划分的图
+      }
     },
     select_index1 () {
-      this.select_index2 = ''
-      this.drawChart2()
+      if (this.select_index1 !== '') {
+        this.select_index2 = ''
+        this.drawChart2()
+      }
     },
     select_index2 () {
-      console.log(this.second_chart[this.select_index1].issues)
-      this.drawChart3()
+      if (this.select_index2 !== '') {
+        this.drawChart3()
+      }
     },
     form: function () { console.log(this.form) }
   },
   methods: {
-    drawChart1 () { // 绘制echarts
+    /**
+    *  绘制按板块划分的echarts
+    */
+    drawChart1 () {
       // 基于准备好的dom，初始化echarts实例
       let myChart1 = this.$echarts.init(document.getElementById('first'))
       // 指定图表的配置项和数据
@@ -297,7 +309,10 @@ export default {
       // 使用刚指定的配置项和数据显示图表。
       myChart1.setOption(option1)
     },
-    drawChart2 () { // 绘制echarts
+    /**
+    *  绘制按评分标准的echarts
+    */
+    drawChart2 () {
       // 基于准备好的dom，初始化echarts实例
       let myChart2 = this.$echarts.init(document.getElementById('second'))
       // 指定图表的配置项和数据
@@ -336,7 +351,10 @@ export default {
       // 使用刚指定的配置项和数据显示图表。
       myChart2.setOption(option2)
     },
-    drawChart3 () { // 绘制echarts
+    /**
+    *  绘制按扣分项目的echarts
+    */
+    drawChart3 () {
       // 基于准备好的dom，初始化echarts实例
       let myChart3 = this.$echarts.init(document.getElementById('third'))
       // 指定图表的配置项和数据
@@ -367,7 +385,11 @@ export default {
       // 使用刚指定的配置项和数据显示图表。
       myChart3.setOption(option3)
     },
-    arraySpanMethod ({ row, column, rowIndex, columnIndex }) { // 行列合并函数
+    /**
+    *  行列合并函数
+    *  @param object 行列信息
+    */
+    arraySpanMethod ({ row, column, rowIndex, columnIndex }) {
       if (row.serial === 'title') {
         if (columnIndex === this.auth + 3) {
           return [1, 8]
@@ -435,9 +457,11 @@ export default {
         }
       }
     },
-    handleSwitchTab (tab, event) {
-      console.log(tab, event)
-    },
+    /**
+    *  @description 点击新建扣分
+    *  @method handleCreate
+    *  @param {number} index 你好
+    */
     handleCreate (index) {
       // 点击新建扣分
       this.selected = index
