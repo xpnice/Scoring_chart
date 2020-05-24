@@ -206,7 +206,7 @@
  */
 import res from './response.json'
 import { fetchTableById, dispatchScore } from '@/api/remote-search'
-const dev = true
+const dev = false
 const _fetchtable = function (body, timeout = 1000) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -283,18 +283,21 @@ export default {
     async confirmdispatch () {
       if (this.auth === 1) {
         this.dispatching = true
-        if (dev) {
+        if (dev) { // 开发模式
           this.auth = 0
           await this.calChart() // 计算表格
           await this.drawChart1() // 绘制按板块划分的图
-        } else {
-          let form = new FormData()
-          form.append('tableData', this.tableData)
-          const response = await dispatchScore(form).catch((err) => { console.log(err) })
-          if (response) {
+        } else { // 后端模式
+          let response = await dispatchScore({
+            'data': JSON.stringify(this.tableData),
+            'projectID': 10,
+            'filename': 'YJ-4',
+            'score': 20
+          }).catch((err) => { console.log(err) })
+          if (!!response) {
+            this.auth = 0
             await this.calChart() // 计算表格
             await this.drawChart1() // 绘制按板块划分的图
-            this.auth = 0
           }
         }
         this.dispatching = false
