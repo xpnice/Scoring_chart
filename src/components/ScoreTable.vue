@@ -2,6 +2,7 @@
   <div>
     <el-table :data="tableData"
               border
+              v-loading="fetching"
               :span-method="arraySpanMethod"
               size="mini"
               style="width: 100%"
@@ -127,8 +128,7 @@
                      v-if="tableData[selected]!=undefined"
                      allow-create
                      filterable
-                     :disabled="
-                     editing"
+                     :disabled="editing"
                      v-on:change="changeSelection"
                      placeholder="请选择评分标准">
             <el-option v-for="standard in tableData[selected].standards"
@@ -159,7 +159,9 @@
       </div>
     </el-dialog>
     <el-button style="margin-top:20px;margin-bottom:20px;"
-               @click="auth=1-auth"
+               @click="confirmdispatch"
+               v-show="!fetching"
+               :loading="dispatching"
                type="primary">{{this.auth?'发布评价表':'管理员模式'}}</el-button>
     <div v-if="1-auth">
       <el-select v-model=" select_index1"
@@ -203,7 +205,9 @@
  * @date 2020/5/10
  */
 import res from './response.json'
-const fetchtable = function (body, timeout = 1000) {
+import { fetchTableById, dispatchScore } from '@/api/remote-search'
+const dev = true
+const _fetchtable = function (body, timeout = 1000) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       resolve(body)
@@ -213,45 +217,54 @@ const fetchtable = function (body, timeout = 1000) {
 export default {
   data () {
     return {
-      auth: 1,
-      editing: false,
-      selected: 0,
-      dialogFormVisible: false,
-      select_index1: '',
-      select_index2: '',
-      form: {
+      auth: 1, // 1未发布0已发布
+      editing: false, // 仍在编辑扣分项
+      selected: 0, // 选择的行
+      dialogFormVisible: false, // 是否显示新建扣分模态框
+      select_index1: '', // 板块扣分索引
+      select_index2: '', // 标准扣分索引
+      form: { // 扣分项表单
         num: 0,
         note: '',
         region: ''
       },
-      formLabelWidth: '120px',
-      name: '',
-      tableData: [],
-      first_chart: [],
-      second_chart: []
+      formLabelWidth: '120px', // 新建扣分的输入栏宽度
+      name: '', // 打分表名称
+      dispatching: false, // 发布正在加载
+      fetching: true, // 正在从后台获取表单
+      tableData: [], // 表单树
+      first_chart: [], // 板块扣分数组
+      second_chart: [] // 标准扣分数组
     }
   },
   async mounted () {
-    let response = await fetchtable(res)
+    let response
+    if (dev) {
+      response = await _fetchtable(res)
+    } else {
+      response = await fetchTableById('YPJ4')
+      response = response.data
+    }
     this.name = response.name
     this.tableData = response.tableData
     for (let table of this.tableData) {
       if (table.serial === 'title') {
-        table.explanation = table.item.concat(`（${table.score}分）`)
+        if (table.hasOwnProperty('score')) {
+          table.explanation = table.item.concat(`（${table.score}分）`)
+        } else {
+          table.explanation = table.item.concat('（额外扣分项）')
+        }
       } else {
         for (let index in table.standards) {
           table.standards[index].index = parseInt(index, 10)
         }
       }
     }
+    this.fetching = false
   },
   watch: {
     auth: async function () { // 切换管理员模式
       this.select_index2 = this.select_index1 = '' // 清空选择器
-      if (this.auth === 0) {
-        await this.calChart() // 计算表格
-        this.drawChart1() // 绘制按板块划分的图
-      }
     },
     select_index1 () {
       if (this.select_index1 !== '') {
@@ -267,6 +280,26 @@ export default {
     form: function () { console.log(this.form) }
   },
   methods: {
+    async confirmdispatch () {
+      if (this.auth === 1) {
+        this.dispatching = true
+        if (dev) {
+          this.auth = 0
+          await this.calChart() // 计算表格
+          await this.drawChart1() // 绘制按板块划分的图
+        } else {
+          let form = new FormData()
+          form.append('tableData', this.tableData)
+          const response = await dispatchScore(form).catch((err) => { console.log(err) })
+          if (response) {
+            await this.calChart() // 计算表格
+            await this.drawChart1() // 绘制按板块划分的图
+            this.auth = 0
+          }
+        }
+        this.dispatching = false
+      } else this.auth = 1
+    },
     /**
     *  绘制按板块划分的echarts
     */
@@ -387,7 +420,7 @@ export default {
     },
     /**
     *  行列合并函数
-    *  @param object 行列信息
+    *  @param object 你好
     */
     arraySpanMethod ({ row, column, rowIndex, columnIndex }) {
       if (row.serial === 'title') {
@@ -458,8 +491,8 @@ export default {
       }
     },
     /**
-    *  @description 点击新建扣分
-    *  @method handleCreate
+    *  点击新建扣分
+    *  @method (handleCreate)
     *  @param {number} index 你好
     */
     handleCreate (index) {
